@@ -44,10 +44,14 @@ public class ProductService {
         return resultList;
     }
 
+    // REMEDIACIÓN CRÍTICA: Parametrización estricta contra SQL Injection (SQLi)
     public List<Product> findContainingName(String name) {
-        Query query = entityManager.createQuery("SELECT p FROM Product p WHERE p.name LIKE '%" + name + "%'");
-        List<Product> resultList = query.getResultList();
+        // Se reemplaza la concatenación cruda por la variable estructurada ':name'
+        String ejbqlString = "SELECT p FROM Product p WHERE p.name LIKE :name";
+        Query query = entityManager.createQuery(ejbqlString);
+        // El parámetro se inyecta de forma segura encapsulando los comodines de búsqueda
+        query.setParameter("name", "%" + name + "%");
 
-        return resultList;
+        return query.getResultList();
     }
 }

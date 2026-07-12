@@ -9,8 +9,5 @@
         <module name="dvja" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="dvja" target="1.7" />
-    </bytecodeTargetLevel>
   </component>
 </project>
