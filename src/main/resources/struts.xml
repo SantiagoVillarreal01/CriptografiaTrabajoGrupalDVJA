@@ -5,18 +5,30 @@
 <struts>
     <constant name="struts.enable.DynamicMethodInvocation" value="false"/>
     <constant name="struts.devMode" value="true"/>
-    <!--<constant name="struts.objectFactory.spring.autoWire" value="type"/>-->
 
     <include file="example.xml"/>
 
     <package name="default" namespace="/" extends="struts-default">
         
         <interceptors>
+            <!-- Interceptor Base de Autenticación -->
             <interceptor name="authenticationInterceptor"
                          class="com.appsecco.dvja.interceptors.AuthenticationInterceptor"/>
             
+            <!-- NUEVO: Interceptor de Segregación de Roles (SoD) -->
+            <interceptor name="roleAuthorizationInterceptor"
+                         class="com.appsecco.dvja.interceptors.RoleAuthorizationInterceptor"/>
+            
+            <!-- Stack estándar de autenticación -->
             <interceptor-stack name="authenticationStack">
                 <interceptor-ref name="authenticationInterceptor"/>
+                <interceptor-ref name="defaultStack"/>
+            </interceptor-stack>
+
+            <!-- NUEVO: Stack seguro con validación de Roles incorporada -->
+            <interceptor-stack name="roleAuthorizationStack">
+                <interceptor-ref name="authenticationInterceptor"/>
+                <interceptor-ref name="roleAuthorizationInterceptor"/>
                 <interceptor-ref name="defaultStack"/>
             </interceptor-stack>
         </interceptors>
@@ -54,13 +66,14 @@
         </action>
 
         <action name="userSearch" class="com.appsecco.dvja.controllers.UserAction" method="search">
-            <interceptor-ref name="authenticationStack"/>
+            <!-- Aplicación de segregación de funciones para limitar consultas -->
+            <interceptor-ref name="roleAuthorizationStack"/>
             <result name="input">/WEB-INF/dvja/UserSearch.jsp</result>
             <result>/WEB-INF/dvja/UserSearch.jsp</result>
         </action>
 
         <action name="editUser" class="com.appsecco.dvja.controllers.UserAction" method="edit">
-            <interceptor-ref name="authenticationStack"/>
+            <interceptor-ref name="roleAuthorizationStack"/>
             <result name="input">/WEB-INF/dvja/UserEdit.jsp</result>
             <result>/WEB-INF/dvja/Home.jsp</result>
         </action>
@@ -77,7 +90,7 @@
         </action>
 
         <action name="addEditProduct" class="com.appsecco.dvja.controllers.ProductAction">
-            <interceptor-ref name="authenticationStack"/>
+            <interceptor-ref name="roleAuthorizationStack"/> <!-- Solo roles autorizados editan productos -->
             <result name="input">/WEB-INF/dvja/ProductEdit.jsp</result>
             <result type="redirectAction">
                 <param name="actionName">listProduct</param>
@@ -88,7 +101,6 @@
             <result name="input">/WEB-INF/dvja/ResetPasswordStart.jsp</result>
             <result>/WEB-INF/dvja/ResetPasswordSuccess.jsp</result>
         </action>
-
 
         <action name="resetPasswordExecute" class="com.appsecco.dvja.controllers.ResetPassword">
             <result name="input">/WEB-INF/dvja/ResetPasswordInput.jsp</result>
@@ -153,10 +165,14 @@
 
     </package>
 
-    <package name="api" namespace="/api" extends="struts-default">
-        <action name="ping" class="com.appsecco.dvja.controllers.ApiAction" method="ping"></action>
-        <action name="userList" class="com.appsecco.dvja.controllers.ApiAction" method="adminShowUsers"></action>
+    <!-- Paquete API protegido con interceptores de segregación de funciones -->
+    <package name="api" namespace="/api" extends="default">
+        <action name="ping" class="com.appsecco.dvja.controllers.ApiAction" method="ping">
+            <interceptor-ref name="authenticationStack"/>
+        </action>
+        <action name="userList" class="com.appsecco.dvja.controllers.ApiAction" method="adminShowUsers">
+            <interceptor-ref name="roleAuthorizationStack"/> <!-- Forzamos validación de roles en la API -->
+        </action>
     </package>
 
-    <!-- Add addition packages and configuration here. -->
 </struts>
