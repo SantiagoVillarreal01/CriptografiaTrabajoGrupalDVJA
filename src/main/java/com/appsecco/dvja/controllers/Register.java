@@ -11,6 +11,7 @@ public class Register extends BaseController {
     private String email;
     private String password;
     private String passwordConfirmation;
+    private boolean acceptLOPDP; // Nuevo parámetro para cumplir con la LOPDP
 
     private UserRegistrationService userRegistrationService;
 
@@ -54,6 +55,14 @@ public class Register extends BaseController {
         this.passwordConfirmation = passwordConfirmation;
     }
 
+    public boolean isAcceptLOPDP() {
+        return acceptLOPDP;
+    }
+
+    public void setAcceptLOPDP(boolean acceptLOPDP) {
+        this.acceptLOPDP = acceptLOPDP;
+    }
+
     public UserRegistrationService getUserRegistrationService() {
         return userRegistrationService;
     }
@@ -62,22 +71,31 @@ public class Register extends BaseController {
         this.userRegistrationService = userRegistrationService;
     }
 
+    @Override
     public void validate() {
         if(!getServletRequest().getMethod().equalsIgnoreCase("POST"))
             return;
 
         if(StringUtils.isEmpty(getName()))
-            addFieldError("name", "Name is required");
+            addFieldError("name", "El nombre es obligatorio.");
         if(StringUtils.isEmpty(getLogin()))
-            addFieldError("login", "Login is required");
+            addFieldError("login", "El nombre de usuario es obligatorio.");
+        if(StringUtils.isEmpty(getEmail()))
+            addFieldError("email", "El correo electrónico es obligatorio.");
         if(StringUtils.isEmpty(getPassword()))
-            addFieldError("password", "Password is required");
+            addFieldError("password", "La contraseña es obligatoria.");
         if(StringUtils.isEmpty(getPasswordConfirmation()))
-            addFieldError("passwordConfirmation", "Password confirmation is required");
+            addFieldError("passwordConfirmation", "La confirmación de la contraseña es obligatoria.");
         if(!StringUtils.equals(getPassword(), getPasswordConfirmation()))
-            addFieldError("password", "Password must match confirmation");
+            addFieldError("password", "Las contraseñas no coinciden.");
+        
+        // VALIDACIÓN DE SEGURIDAD LOPDP (BACKEND)
+        if(!acceptLOPDP) {
+            addFieldError("acceptLOPDP", "Debe otorgar su consentimiento explícito conforme a la LOPDP de Ecuador para poder registrarse.");
+        }
     }
 
+    @Override
     public String execute() {
         User user = null;
 
@@ -86,7 +104,7 @@ public class Register extends BaseController {
                     getPassword(), getPasswordConfirmation());
         }
         catch(Exception e) {
-            addActionError("Error Occurred: " + e.getMessage());
+            addActionError("Error ocurrido durante el proceso: " + e.getMessage());
         }
 
         if(user != null) {
